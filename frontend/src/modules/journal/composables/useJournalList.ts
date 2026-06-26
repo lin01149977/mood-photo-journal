@@ -4,12 +4,11 @@ import { useJournalStore } from '../store'
 import type { Journal, MoodOption } from '../types'
 
 export const moodOptions: MoodOption[] = [
-  { id: 'joy', label: '明亮', color: '#ffbf3f' },
-  { id: 'calm', label: '平静', color: '#6dc6c9' },
-  { id: 'moved', label: '柔软', color: '#ff8fa3' },
-  { id: 'tired', label: '疲惫', color: '#9aa36d' },
-  { id: 'blue', label: '低落', color: '#78a7ff' },
-  { id: 'spark', label: '期待', color: '#ff7a45' },
+  { id: 'happy', label: '开心', emoji: '😊', color: '#ffbf3f' },
+  { id: 'calm', label: '平静', emoji: '😌', color: '#6dc6c9' },
+  { id: 'sad', label: '伤心', emoji: '😢', color: '#7aa7e8' },
+  { id: 'low', label: '低落', emoji: '☁️', color: '#8f95a8' },
+  { id: 'expecting', label: '期待', emoji: '🤩', color: '#ff7a45' },
 ]
 
 export interface MonthDay {

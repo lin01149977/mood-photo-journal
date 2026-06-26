@@ -45,11 +45,14 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
           <span>{{ day.weekday }}</span>
           <strong>{{ day.day }}</strong>
         </div>
-        <img v-if="day.entry?.photos[0]" :src="day.entry.photos[0]" alt="" />
-        <div v-else class="month-calendar__empty">
-          <span>blank</span>
+        <div class="month-calendar__photo">
+          <img v-if="day.entry?.photos[0]" :src="day.entry.photos[0]" alt="" />
+          <div v-else class="month-calendar__empty">
+            <span>blank</span>
+          </div>
         </div>
-        <p>{{ day.entry?.mood ?? '未记录' }}</p>
+        <p class="month-calendar__mood">{{ day.entry?.mood ?? '未记录' }}</p>
+        <p v-if="day.entry?.note" class="month-calendar__note">{{ day.entry.note }}</p>
       </article>
     </section>
 
@@ -68,10 +71,13 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
         :key="photo"
         :style="{ '--mood-color': entry.moodColor }"
       >
-        <img :src="photo" alt="" />
+        <div class="photo-mosaic__photo">
+          <img :src="photo" alt="" />
+        </div>
         <figcaption>
           <span>{{ entry.entryDate }}</span>
           <strong>{{ entry.mood }}</strong>
+          <em v-if="entry.note">{{ entry.note }}</em>
         </figcaption>
       </figure>
       <p v-if="monthPhotos.length === 0" class="review-page__hint">
@@ -188,7 +194,7 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
 
   &__day {
     --mood-color: #f0dcc9;
-    min-height: 196px;
+    min-height: 230px;
     padding: @space-sm;
     border: 1px dashed rgba(61, 51, 40, 0.18);
     border-radius: 24px;
@@ -205,23 +211,56 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     box-shadow: inset 0 -7px 0 var(--mood-color), 0 12px 24px rgba(78, 52, 31, 0.1);
   }
 
-  &__day img,
+  &__photo,
   &__empty {
     width: 100%;
     aspect-ratio: 1;
     border-radius: 18px;
   }
 
-  &__day img {
-    object-fit: cover;
-    box-shadow: 0 8px 18px rgba(70, 48, 31, 0.12);
+  &__photo {
+    overflow: visible;
+    position: relative;
+    z-index: 1;
   }
 
-  &__day p {
+  &__photo img {
+    width: 100%;
+    height: 100%;
+    border-radius: 18px;
+    display: block;
+    object-fit: cover;
+    box-shadow: 0 8px 18px rgba(70, 48, 31, 0.12);
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  &__photo:hover {
+    z-index: 8;
+  }
+
+  &__photo:hover img {
+    transform: scale(1.72);
+    box-shadow: 0 24px 58px rgba(70, 48, 31, 0.28);
+  }
+
+  &__mood {
     margin: auto 0 0;
     color: #6f5b46;
     font-size: @font-size-sm;
-    font-weight: 800;
+    font-weight: 900;
+  }
+
+  &__note {
+    display: -webkit-box;
+    margin: -2px 0 0;
+    overflow: hidden;
+    color: #7d6650;
+    font-size: 12px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   &__date {
@@ -286,27 +325,51 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     margin: 0 0 @space-md;
     padding: 9px 9px 0;
     border-radius: 24px;
-    overflow: hidden;
+    overflow: visible;
     background: #fffaf0;
     border: 1px solid rgba(61, 51, 40, 0.12);
     box-shadow: 0 16px 36px rgba(118, 78, 42, 0.14);
   }
 
-  img {
+  &__photo {
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__photo img {
     width: 100%;
     border-radius: 17px;
     display: block;
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  &__photo:hover {
+    z-index: 8;
+  }
+
+  &__photo:hover img {
+    transform: scale(1.3);
+    box-shadow: 0 24px 58px rgba(70, 48, 31, 0.28);
   }
 
   figcaption {
-    display: flex;
-    justify-content: space-between;
-    gap: @space-sm;
+    display: grid;
+    gap: 4px;
     border-top: 7px solid var(--mood-color);
     padding: @space-sm @space-xs @space-md;
     color: #5a4634;
     font-size: @font-size-sm;
     font-weight: 800;
+  }
+
+  figcaption em {
+    color: #7d6650;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.6;
   }
 }
 
@@ -332,6 +395,11 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
 
   .month-calendar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .month-calendar__photo:hover img,
+  .photo-mosaic__photo:hover img {
+    transform: scale(1.08);
   }
 }
 </style>

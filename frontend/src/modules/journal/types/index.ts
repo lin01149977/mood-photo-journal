@@ -28,5 +28,6 @@ export interface JournalUpdateInput {
 export interface MoodOption {
   id: string
   label: string
+  emoji: string
   color: string
 }

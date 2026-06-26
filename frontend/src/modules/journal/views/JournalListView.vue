@@ -70,7 +70,7 @@ async function onSubmit() {
   try {
     await create({
       entryDate: entryDate.value,
-      mood: activeMood.value.label,
+      mood: `${activeMood.value.emoji} ${activeMood.value.label}`,
       moodColor: activeMood.value.color,
       note: note.value.trim(),
       photos: photos.value,
@@ -153,7 +153,7 @@ function onRemove(entry: Journal) {
             type="button"
             @click="selectedMood = mood.id"
           >
-            <span />
+            <span class="composer__emoji">{{ mood.emoji }}</span>
             {{ mood.label }}
           </button>
         </div>
@@ -233,8 +233,8 @@ function onRemove(entry: Journal) {
     max-width: 720px;
     margin: 0;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(42px, 7vw, 76px);
-    line-height: 0.96;
+    font-size: clamp(38px, 6.3vw, 68px);
+    line-height: 0.98;
     color: #382b20;
     letter-spacing: -0.04em;
   }
@@ -490,19 +490,22 @@ function onRemove(entry: Journal) {
     gap: @space-xs;
     border: 2px solid transparent;
     border-radius: 999px;
-    padding: 8px 12px;
+    padding: 7px 12px 7px 8px;
     background: rgba(255, 255, 255, 0.7);
     color: #3d3328;
     cursor: pointer;
     font-weight: 800;
   }
 
-  &__mood span {
-    width: 13px;
-    height: 13px;
+  &__emoji {
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: var(--mood-color);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mood-color) 20%, transparent);
+    background: color-mix(in srgb, var(--mood-color) 28%, white);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mood-color) 18%, transparent);
+    font-size: 16px;
   }
 
   &__mood.is-active {
