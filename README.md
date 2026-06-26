@@ -61,6 +61,22 @@ http://127.0.0.1:5173/
 
 The frontend proxies `/api` to `http://localhost:3000`.
 
+## Online Demo
+
+The GitHub Pages build runs as a browser-only demo. It does not require the
+backend, and each visitor's diary data is saved in their own browser storage:
+
+```text
+https://lin01149977.github.io/mood-photo-journal/
+```
+
+To build the same static demo locally:
+
+```bash
+cd frontend
+VITE_STATIC_DEMO=true VITE_APP_BASE=/mood-photo-journal/ npm run build
+```
+
 ## Project Structure
 
 ```text
