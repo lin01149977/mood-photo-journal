@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import BaseButton from '@/components/BaseButton/index.vue'
 import BaseEmpty from '@/components/BaseEmpty/index.vue'
@@ -15,13 +15,27 @@ const selectedMood = ref(moods[0].id)
 const note = ref('')
 const photos = ref<string[]>([])
 const submitting = ref(false)
+const dateStripRef = ref<HTMLElement | null>(null)
+const isDateDragging = ref(false)
+let dragStartX = 0
+let dragStartScrollLeft = 0
+let didDateDrag = false
+let suppressDateClick = false
+let pressedDate = ''
 
 const activeMood = computed(() => moods.find((mood) => mood.id === selectedMood.value) ?? moods[0])
 const canSubmit = computed(() => photos.value.length > 0 && photos.value.length <= 3 && !submitting.value)
 const isBackfill = computed(() => entryDate.value < today)
-const monthPreviewDays = computed(() => monthDays.value.slice(0, 14))
 
-onMounted(() => fetchAll())
+onMounted(() => {
+  void fetchAll()
+  void scrollSelectedDateIntoView('auto')
+})
+onBeforeUnmount(() => stopDateDrag())
+
+watch(entryDate, () => {
+  void scrollSelectedDateIntoView()
+})
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -87,6 +101,71 @@ async function onSubmit() {
 function onRemove(entry: Journal) {
   void remove(entry.id)
 }
+
+function selectDate(date: string) {
+  if (suppressDateClick) {
+    suppressDateClick = false
+    return
+  }
+  if (date > today) return
+  entryDate.value = date
+}
+
+async function scrollSelectedDateIntoView(behavior: ScrollBehavior = 'smooth') {
+  await nextTick()
+  const track = dateStripRef.value
+  if (!track) return
+  const activeButton = track.querySelector<HTMLElement>(`[data-date="${entryDate.value}"]`)
+  if (!activeButton) return
+
+  const targetLeft = activeButton.offsetLeft - track.clientWidth / 2 + activeButton.clientWidth / 2
+  track.scrollTo({
+    left: Math.max(0, targetLeft),
+    behavior,
+  })
+}
+
+function startDateDrag(event: PointerEvent) {
+  const track = dateStripRef.value
+  if (!track) return
+  isDateDragging.value = true
+  didDateDrag = false
+  pressedDate = ''
+  dragStartX = event.clientX
+  dragStartScrollLeft = track.scrollLeft
+
+  const dateButton = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('.date-ribbon__day')
+  if (dateButton && !dateButton.disabled) {
+    pressedDate = dateButton.dataset.date ?? ''
+  }
+
+  track.setPointerCapture(event.pointerId)
+}
+
+function moveDateDrag(event: PointerEvent) {
+  if (!isDateDragging.value || !dateStripRef.value) return
+  const distance = event.clientX - dragStartX
+  if (Math.abs(distance) > 4) didDateDrag = true
+  dateStripRef.value.scrollLeft = dragStartScrollLeft - distance
+}
+
+function stopDateDrag(event?: PointerEvent) {
+  if (!isDateDragging.value) return
+  isDateDragging.value = false
+  if (event && dateStripRef.value?.hasPointerCapture(event.pointerId)) {
+    dateStripRef.value.releasePointerCapture(event.pointerId)
+  }
+  if (didDateDrag) {
+    suppressDateClick = true
+    didDateDrag = false
+    window.setTimeout(() => {
+      suppressDateClick = false
+    }, 120)
+  } else if (pressedDate) {
+    entryDate.value = pressedDate
+  }
+  pressedDate = ''
+}
 </script>
 
 <template>
@@ -107,16 +186,31 @@ function onRemove(entry: Journal) {
       <RouterLink class="journal-page__review-link" to="/journal/review">翻看本月回忆</RouterLink>
     </header>
 
-    <section class="journal-page__month-strip" aria-label="本月记录预览">
+    <section class="date-ribbon" aria-label="本月日期选择">
       <div
-        v-for="day in monthPreviewDays"
-        :key="day.key"
-        class="journal-page__month-day"
-        :class="{ 'has-entry': day.entry }"
-        :style="{ '--day-color': day.color }"
+        ref="dateStripRef"
+        class="date-ribbon__track"
+        :class="{ 'is-dragging': isDateDragging }"
+        @pointerdown="startDateDrag"
+        @pointermove="moveDateDrag"
+        @pointerup="stopDateDrag"
+        @pointercancel="stopDateDrag"
+        @pointerleave="stopDateDrag"
       >
-        <span>{{ day.weekday }}</span>
-        <strong>{{ day.day }}</strong>
+        <button
+          v-for="day in monthDays"
+          :key="day.key"
+          class="date-ribbon__day"
+          :class="{ 'has-entry': day.entry, 'is-active': entryDate === day.key, 'is-future': day.key > today }"
+          :style="{ '--day-color': day.color }"
+          :data-date="day.key"
+          type="button"
+          :disabled="day.key > today"
+          @click="selectDate(day.key)"
+        >
+          <span>{{ day.weekday }}</span>
+          <strong>{{ day.day }}</strong>
+        </button>
       </div>
     </section>
 
@@ -128,7 +222,7 @@ function onRemove(entry: Journal) {
       </div>
 
       <div class="composer__photos">
-        <label class="composer__picker">
+        <label class="composer__picker" :class="{ 'is-empty': photos.length === 0 }">
           <input type="file" accept="image/*" multiple @change="onPickPhotos" />
           <span>选择照片</span>
           <small>{{ photos.length }}/3</small>
@@ -230,13 +324,14 @@ function onRemove(entry: Journal) {
   }
 
   &__hero h1 {
-    max-width: 720px;
+    max-width: none;
     margin: 0;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: clamp(38px, 6.3vw, 68px);
+    font-size: clamp(34px, 5.2vw, 62px);
     line-height: 0.98;
     color: #382b20;
     letter-spacing: -0.04em;
+    white-space: nowrap;
   }
 
   &__eyebrow {
@@ -284,45 +379,6 @@ function onRemove(entry: Journal) {
     transform: rotate(2deg);
   }
 
-  &__month-strip {
-    display: grid;
-    grid-template-columns: repeat(14, minmax(0, 1fr));
-    gap: @space-xs;
-    margin-bottom: @space-xl;
-    padding: @space-md;
-    border-radius: 26px;
-    background: rgba(255, 252, 241, 0.68);
-    border: 1px solid rgba(61, 51, 40, 0.08);
-  }
-
-  &__month-day {
-    --day-color: #f0dcc9;
-    min-height: 68px;
-    padding: @space-xs @space-sm;
-    border: 1px dashed rgba(61, 51, 40, 0.15);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.54);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  &__month-day span {
-    color: #9b8065;
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  &__month-day strong {
-    color: #3d3328;
-    font-size: @font-size-lg;
-  }
-
-  &__month-day.has-entry {
-    background: color-mix(in srgb, var(--day-color) 28%, white);
-    box-shadow: inset 0 -6px 0 var(--day-color);
-  }
-
   &__stats {
     display: flex;
     flex-wrap: wrap;
@@ -350,12 +406,92 @@ function onRemove(entry: Journal) {
   }
 }
 
+.date-ribbon {
+  position: relative;
+  margin-bottom: @space-xl;
+  border: 1px solid rgba(61, 51, 40, 0.08);
+  border-radius: 28px;
+  background: rgba(255, 252, 241, 0.68);
+  overflow: hidden;
+
+  &__track {
+    display: flex;
+    gap: @space-xs;
+    padding: @space-md;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+  }
+
+  &__track.is-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+  }
+
+  &__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  &__day {
+    --day-color: #f0dcc9;
+    flex: 0 0 72px;
+    min-height: 74px;
+    padding: @space-xs @space-sm;
+    border: 1px dashed rgba(61, 51, 40, 0.15);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.54);
+    color: #3d3328;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+
+  &__track.is-dragging &__day {
+    cursor: grabbing;
+  }
+
+  &__day span {
+    color: #9b8065;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  &__day strong {
+    font-size: @font-size-lg;
+  }
+
+  &__day.has-entry {
+    background: color-mix(in srgb, var(--day-color) 28%, white);
+    box-shadow: inset 0 -6px 0 var(--day-color);
+  }
+
+  &__day.is-active {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--day-color) 68%, #3d3328);
+    background: color-mix(in srgb, var(--day-color) 42%, white);
+    transform: translateY(-2px);
+  }
+
+  &__day.is-future {
+    cursor: not-allowed;
+    opacity: 0.44;
+  }
+}
+
 .composer {
   --active-mood: #ffbf3f;
   position: relative;
   display: grid;
-  grid-template-columns: 0.72fr 1fr 1.1fr;
-  gap: @space-xl;
+  grid-template-columns: 0.66fr 1.16fr 0.86fr;
+  gap: @space-lg;
   padding: @space-xl;
   border: 2px solid rgba(61, 51, 40, 0.12);
   border-radius: 34px;
@@ -421,6 +557,12 @@ function onRemove(entry: Journal) {
     font-weight: 900;
   }
 
+  &__picker.is-empty {
+    grid-column: 1 / -1;
+    min-height: 190px;
+    aspect-ratio: auto;
+  }
+
   &__picker input {
     display: none;
   }
@@ -471,41 +613,44 @@ function onRemove(entry: Journal) {
   }
 
   &__note {
-    min-height: 108px;
-    padding: @space-md;
+    min-height: 88px;
+    padding: @space-sm @space-md;
     resize: vertical;
     line-height: 1.7;
   }
 
   &__moods {
-    display: flex;
-    flex-wrap: wrap;
-    gap: @space-sm;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
   }
 
   &__mood {
     --mood-color: #ffbf3f;
     display: inline-flex;
     align-items: center;
-    gap: @space-xs;
+    justify-content: center;
+    gap: 9px;
     border: 2px solid transparent;
     border-radius: 999px;
-    padding: 7px 12px 7px 8px;
+    padding: 10px 16px 10px 10px;
     background: rgba(255, 255, 255, 0.7);
     color: #3d3328;
     cursor: pointer;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 900;
+    white-space: nowrap;
   }
 
   &__emoji {
-    width: 28px;
-    height: 28px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--mood-color) 28%, white);
     display: grid;
     place-items: center;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--mood-color) 18%, transparent);
-    font-size: 16px;
+    font-size: 24px;
   }
 
   &__mood.is-active {
@@ -516,8 +661,8 @@ function onRemove(entry: Journal) {
 }
 
 @media (max-width: 980px) {
-  .journal-page__month-strip {
-    grid-template-columns: repeat(7, minmax(42px, 1fr));
+  .journal-page__hero h1 {
+    white-space: normal;
   }
 
   .composer {

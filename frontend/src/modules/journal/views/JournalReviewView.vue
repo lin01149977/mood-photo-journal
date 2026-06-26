@@ -12,6 +12,36 @@ const monthPhotos = computed(() =>
   monthEntries.value.flatMap((entry) => entry.photos.map((photo) => ({ photo, entry }))),
 )
 const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).length)
+
+const moodEmojiByColor: Record<string, string> = {
+  '#ffbf3f': '😊',
+  '#f4b942': '😊',
+  '#6dc6c9': '😌',
+  '#68a7ad': '😌',
+  '#7aa7e8': '😢',
+  '#78a7ff': '😢',
+  '#8f95a8': '☁️',
+  '#8b8f71': '☁️',
+  '#ff7a45': '🤩',
+  '#e06f37': '🤩',
+  '#f05a4f': '😡',
+}
+
+function moodEmoji(mood?: string, moodColor?: string) {
+  const fromMood = mood?.match(/\p{Extended_Pictographic}|\p{Emoji_Presentation}/u)?.[0]
+  if (fromMood) return fromMood
+
+  const normalizedColor = moodColor?.toLowerCase()
+  if (normalizedColor && moodEmojiByColor[normalizedColor]) return moodEmojiByColor[normalizedColor]
+
+  if (mood?.includes('开心') || mood?.includes('明亮')) return '😊'
+  if (mood?.includes('平静')) return '😌'
+  if (mood?.includes('伤心') || mood?.includes('柔软')) return '😢'
+  if (mood?.includes('低落') || mood?.includes('疲惫')) return '☁️'
+  if (mood?.includes('期待')) return '🤩'
+  if (mood?.includes('愤怒')) return '😡'
+  return '·'
+}
 </script>
 
 <template>
@@ -47,12 +77,12 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
         </div>
         <div class="month-calendar__photo">
           <img v-if="day.entry?.photos[0]" :src="day.entry.photos[0]" alt="" />
-          <div v-else class="month-calendar__empty">
-            <span>blank</span>
-          </div>
+          <span v-if="day.entry" class="month-calendar__mood">
+            {{ moodEmoji(day.entry.mood, day.entry.moodColor) }}
+          </span>
+          <p v-if="day.entry?.note" class="month-calendar__hover-note">{{ day.entry.note }}</p>
+          <div v-else class="month-calendar__empty" />
         </div>
-        <p class="month-calendar__mood">{{ day.entry?.mood ?? '未记录' }}</p>
-        <p v-if="day.entry?.note" class="month-calendar__note">{{ day.entry.note }}</p>
       </article>
     </section>
 
@@ -73,11 +103,11 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
       >
         <div class="photo-mosaic__photo">
           <img :src="photo" alt="" />
+          <p v-if="entry.note" class="photo-mosaic__hover-note">{{ entry.note }}</p>
         </div>
         <figcaption>
           <span>{{ entry.entryDate }}</span>
-          <strong>{{ entry.mood }}</strong>
-          <em v-if="entry.note">{{ entry.note }}</em>
+          <strong>{{ moodEmoji(entry.mood, entry.moodColor) }}</strong>
         </figcaption>
       </figure>
       <p v-if="monthPhotos.length === 0" class="review-page__hint">
@@ -194,40 +224,44 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
 
   &__day {
     --mood-color: #f0dcc9;
-    min-height: 230px;
-    padding: @space-sm;
-    border: 1px dashed rgba(61, 51, 40, 0.18);
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.52);
+    aspect-ratio: 3 / 4;
+    min-height: 0;
+    padding: 9px 9px 18px;
+    border: 1px solid rgba(61, 51, 40, 0.13);
+    border-radius: 12px;
+    background: #fffaf0;
     display: flex;
     flex-direction: column;
-    gap: @space-sm;
+    gap: 6px;
+    box-shadow: 0 12px 26px rgba(118, 78, 42, 0.1);
   }
 
   &__day.has-entry {
     background:
-      linear-gradient(180deg, color-mix(in srgb, var(--mood-color) 24%, white), rgba(255, 255, 255, 0.76));
+      linear-gradient(180deg, #fffaf0, color-mix(in srgb, var(--mood-color) 14%, white));
     border-style: solid;
-    box-shadow: inset 0 -7px 0 var(--mood-color), 0 12px 24px rgba(78, 52, 31, 0.1);
-  }
-
-  &__photo,
-  &__empty {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 18px;
+    box-shadow: inset 0 -6px 0 var(--mood-color), 0 12px 24px rgba(78, 52, 31, 0.12);
   }
 
   &__photo {
-    overflow: visible;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+  }
+
+  &__photo {
+    overflow: hidden;
     position: relative;
     z-index: 1;
+    flex: 0 0 auto;
+    max-height: none;
+    margin-top: -2px;
   }
 
   &__photo img {
     width: 100%;
     height: 100%;
-    border-radius: 18px;
+    border-radius: 8px;
     display: block;
     object-fit: cover;
     box-shadow: 0 8px 18px rgba(70, 48, 31, 0.12);
@@ -237,6 +271,7 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
   }
 
   &__photo:hover {
+    overflow: visible;
     z-index: 8;
   }
 
@@ -245,11 +280,60 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     box-shadow: 0 24px 58px rgba(70, 48, 31, 0.28);
   }
 
-  &__mood {
-    margin: auto 0 0;
-    color: #6f5b46;
-    font-size: @font-size-sm;
+  &__photo:hover &__mood {
+    transform: scale(1.42) translate(2px, 2px);
+  }
+
+  &__hover-note {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: -42px;
+    z-index: 2;
+    max-height: 68%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: #fffaf0;
+    font-size: 13px;
     font-weight: 900;
+    line-height: 1.42;
+    text-shadow:
+      0 2px 10px rgba(35, 24, 16, 0.78),
+      0 0 2px #3d3328;
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  &__photo:hover &__hover-note {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &__mood {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    z-index: 3;
+    width: 34px;
+    height: 34px;
+    border: 2px solid rgba(255, 250, 240, 0.9);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--mood-color) 58%, white);
+    display: grid;
+    place-items: center;
+    color: #3d3328;
+    font-size: 21px;
+    font-weight: 900;
+    line-height: 1.15;
+    box-shadow: 0 8px 16px rgba(70, 48, 31, 0.2);
+    transform-origin: center;
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease;
   }
 
   &__note {
@@ -257,10 +341,10 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     margin: -2px 0 0;
     overflow: hidden;
     color: #7d6650;
-    font-size: 12px;
-    line-height: 1.55;
+    font-size: 11px;
+    line-height: 1.35;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
   }
 
   &__date {
@@ -272,16 +356,19 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
 
   &__date span {
     color: #9b8065;
-    font-size: @font-size-sm;
+    font-size: 11px;
     font-weight: 800;
   }
 
   &__date strong {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: @font-size-xl;
+    font-size: 18px;
   }
 
   &__empty {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
     border: 1px dashed rgba(61, 51, 40, 0.16);
     background:
       radial-gradient(circle at 70% 28%, rgba(255, 191, 63, 0.16) 0 22px, transparent 24px),
@@ -355,8 +442,37 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     box-shadow: 0 24px 58px rgba(70, 48, 31, 0.28);
   }
 
+  &__hover-note {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -34px;
+    z-index: 2;
+    margin: 0;
+    padding: 0;
+    color: #fffaf0;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.55;
+    text-shadow:
+      0 2px 12px rgba(35, 24, 16, 0.82),
+      0 0 2px #3d3328;
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease;
+  }
+
+  &__photo:hover &__hover-note {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   figcaption {
-    display: grid;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 4px;
     border-top: 7px solid var(--mood-color);
     padding: @space-sm @space-xs @space-md;
@@ -365,11 +481,9 @@ const recordedDays = computed(() => monthDays.value.filter((day) => day.entry).l
     font-weight: 800;
   }
 
-  figcaption em {
-    color: #7d6650;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 1.6;
+  figcaption strong {
+    font-size: 24px;
+    line-height: 1;
   }
 }
 

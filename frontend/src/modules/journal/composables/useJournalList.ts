@@ -9,6 +9,7 @@ export const moodOptions: MoodOption[] = [
   { id: 'sad', label: '伤心', emoji: '😢', color: '#7aa7e8' },
   { id: 'low', label: '低落', emoji: '☁️', color: '#8f95a8' },
   { id: 'expecting', label: '期待', emoji: '🤩', color: '#ff7a45' },
+  { id: 'angry', label: '愤怒', emoji: '😡', color: '#f05a4f' },
 ]
 
 export interface MonthDay {
