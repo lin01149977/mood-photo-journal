@@ -3,12 +3,12 @@
   align-items: center;
   justify-content: center;
   gap: @space-xs;
-  border: 1px solid transparent;
-  border-radius: @radius-md;
-  font-weight: 500;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-weight: 900;
   cursor: pointer;
-  transition: background-color @transition-fast, border-color @transition-fast,
-    color @transition-fast;
+  transition: transform @transition-fast, box-shadow @transition-fast, background-color @transition-fast,
+    border-color @transition-fast, color @transition-fast;
   user-select: none;
 
   &--block {
@@ -22,8 +22,8 @@
     font-size: @font-size-sm;
   }
   &--md {
-    height: 36px;
-    padding: 0 @space-lg;
+    height: 44px;
+    padding: 0 @space-xl;
     font-size: @font-size-md;
   }
   &--lg {
@@ -33,13 +33,17 @@
   }
 
   &--primary {
-    background-color: @color-primary;
-    color: @color-text-inverse;
+    border-color: rgba(61, 51, 40, 0.14);
+    background-color: #ff7a45;
+    color: #fffaf0;
+    box-shadow: 0 7px 0 #c44e37;
     &:hover:not(:disabled) {
-      background-color: @color-primary-hover;
+      background-color: #ff8d5f;
+      transform: translateY(-1px);
     }
     &:active:not(:disabled) {
-      background-color: @color-primary-active;
+      box-shadow: 0 3px 0 #c44e37;
+      transform: translateY(3px);
     }
   }
   &--secondary {

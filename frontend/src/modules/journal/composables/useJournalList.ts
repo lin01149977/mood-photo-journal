@@ -4,12 +4,12 @@ import { useJournalStore } from '../store'
 import type { Journal, MoodOption } from '../types'
 
 export const moodOptions: MoodOption[] = [
-  { id: 'joy', label: '明亮', color: '#f4b942' },
-  { id: 'calm', label: '平静', color: '#68a7ad' },
-  { id: 'moved', label: '柔软', color: '#d9898f' },
-  { id: 'tired', label: '疲惫', color: '#8b8f71' },
-  { id: 'blue', label: '低落', color: '#6d8fc3' },
-  { id: 'spark', label: '期待', color: '#e06f37' },
+  { id: 'joy', label: '明亮', color: '#ffbf3f' },
+  { id: 'calm', label: '平静', color: '#6dc6c9' },
+  { id: 'moved', label: '柔软', color: '#ff8fa3' },
+  { id: 'tired', label: '疲惫', color: '#9aa36d' },
+  { id: 'blue', label: '低落', color: '#78a7ff' },
+  { id: 'spark', label: '期待', color: '#ff7a45' },
 ]
 
 export interface MonthDay {
@@ -45,7 +45,7 @@ function buildMonthDays(entriesByDate: Map<string, Journal[]>, date = new Date()
       day: index + 1,
       weekday: current.toLocaleDateString('zh-CN', { weekday: 'short' }),
       entry,
-      color: entry?.moodColor ?? '#d9ded6',
+      color: entry?.moodColor ?? '#f0dcc9',
     }
   })
 }

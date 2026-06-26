@@ -92,14 +92,19 @@ function onRemove(entry: Journal) {
 <template>
   <section class="journal-page">
     <header class="journal-page__hero">
-      <div>
+      <div class="journal-page__hero-copy">
         <p class="journal-page__eyebrow">visual diary</p>
-        <h1>把日子补成一片有颜色的风景</h1>
+        <h1>把今天贴成一页彩色手账</h1>
         <p class="journal-page__copy">
-          可以记录今天，也可以补记过去某一天。选 1-3 张照片、一种情绪颜色和一句话，让回忆有地方停靠。
+          用 1-3 张照片、一种心情颜色和一句小注脚，把生活里容易流走的片刻轻轻留下。
         </p>
+        <div class="journal-page__stickers" aria-hidden="true">
+          <span>sunny</span>
+          <span>memory</span>
+          <span>little day</span>
+        </div>
       </div>
-      <RouterLink class="journal-page__review-link" to="/journal/review">查看月回顾</RouterLink>
+      <RouterLink class="journal-page__review-link" to="/journal/review">翻看本月回忆</RouterLink>
     </header>
 
     <section class="journal-page__month-strip" aria-label="本月记录预览">
@@ -116,6 +121,12 @@ function onRemove(entry: Journal) {
     </section>
 
     <section class="composer" :style="{ '--active-mood': activeMood.color }">
+      <div class="composer__intro">
+        <span class="composer__tag">new page</span>
+        <h2>今天发生了什么？</h2>
+        <p>先放照片，再选颜色。像给这一天贴一枚小小的标签。</p>
+      </div>
+
       <div class="composer__photos">
         <label class="composer__picker">
           <input type="file" accept="image/*" multiple @change="onPickPhotos" />
@@ -150,7 +161,7 @@ function onRemove(entry: Journal) {
           v-model="note"
           class="composer__note"
           maxlength="500"
-          placeholder="写一句那天想留下的话"
+          placeholder="写一句那天想留下的话，比如：午后的风很好，路边的花也很好。"
         />
         <BaseButton :loading="submitting" :disabled="!canSubmit" @click="onSubmit">
           {{ isBackfill ? '保存补记' : '保存今天' }}
@@ -159,7 +170,7 @@ function onRemove(entry: Journal) {
     </section>
 
     <div class="journal-page__stats">
-      <span>{{ items.length }} 篇记录</span>
+      <span>{{ items.length }} 篇日记</span>
       <span>{{ photoCount }} 张照片</span>
       <span v-if="error">{{ error }}</span>
     </div>
@@ -182,45 +193,95 @@ function onRemove(entry: Journal) {
 .journal-page {
   max-width: 1120px;
   margin: 0 auto;
-  color: #25312b;
+  color: #3d3328;
 
   &__hero {
-    display: flex;
-    justify-content: space-between;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: @space-xl;
-    align-items: flex-end;
-    padding: @space-xxl 0;
+    align-items: end;
+    padding: 56px 0 30px;
+  }
 
-    h1 {
-      margin: 0;
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 44px;
-      line-height: 1.08;
-      color: #20372f;
-    }
+  &__hero-copy {
+    position: relative;
+    padding: 34px;
+    border: 2px solid rgba(68, 50, 34, 0.1);
+    border-radius: 36px;
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255, 191, 63, 0.28) 0 64px, transparent 66px),
+      radial-gradient(circle at 14% 86%, rgba(109, 198, 201, 0.24) 0 78px, transparent 80px),
+      rgba(255, 252, 241, 0.82);
+    box-shadow: 0 24px 60px rgba(124, 83, 45, 0.15);
+    backdrop-filter: blur(10px);
+  }
+
+  &__hero-copy::before {
+    content: '';
+    position: absolute;
+    top: -13px;
+    left: 42px;
+    width: 118px;
+    height: 28px;
+    border-radius: 5px;
+    background: rgba(255, 143, 163, 0.54);
+    transform: rotate(-4deg);
+  }
+
+  &__hero h1 {
+    max-width: 720px;
+    margin: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(42px, 7vw, 76px);
+    line-height: 0.96;
+    color: #382b20;
+    letter-spacing: -0.04em;
   }
 
   &__eyebrow {
     margin: 0 0 @space-sm;
-    color: #e06f37;
-    font-weight: 700;
+    color: #ff7a45;
+    font-weight: 900;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
   }
 
   &__copy {
     max-width: 620px;
-    margin: @space-md 0 0;
-    color: #66736b;
+    margin: @space-lg 0 0;
+    color: #765f4a;
     font-size: @font-size-lg;
+    line-height: 1.9;
+  }
+
+  &__stickers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: @space-sm;
+    margin-top: @space-xl;
+  }
+
+  &__stickers span {
+    padding: 7px 12px;
+    border: 1px solid rgba(61, 51, 40, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    color: #8b6d4d;
+    font-size: 12px;
+    font-weight: 800;
   }
 
   &__review-link {
     flex: 0 0 auto;
-    padding: 10px 16px;
-    border: 1px solid #c9d1c7;
-    border-radius: @radius-md;
-    color: #25312b;
-    background: rgba(255, 255, 255, 0.72);
+    padding: 14px 18px;
+    border: 2px solid rgba(61, 51, 40, 0.16);
+    border-radius: 20px;
+    color: #3d3328;
+    background: #bfeee9;
+    box-shadow: 5px 6px 0 #ffcf6b;
+    font-weight: 900;
+    transform: rotate(2deg);
   }
 
   &__month-strip {
@@ -228,33 +289,38 @@ function onRemove(entry: Journal) {
     grid-template-columns: repeat(14, minmax(0, 1fr));
     gap: @space-xs;
     margin-bottom: @space-xl;
+    padding: @space-md;
+    border-radius: 26px;
+    background: rgba(255, 252, 241, 0.68);
+    border: 1px solid rgba(61, 51, 40, 0.08);
   }
 
   &__month-day {
-    --day-color: #d9ded6;
-    min-height: 64px;
+    --day-color: #f0dcc9;
+    min-height: 68px;
     padding: @space-xs @space-sm;
-    border-radius: @radius-md;
-    background: rgba(255, 255, 255, 0.64);
-    border: 1px solid rgba(37, 49, 43, 0.08);
+    border: 1px dashed rgba(61, 51, 40, 0.15);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.54);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+  }
 
-    span {
-      color: #768178;
-      font-size: 11px;
-    }
+  &__month-day span {
+    color: #9b8065;
+    font-size: 11px;
+    font-weight: 700;
+  }
 
-    strong {
-      color: #2d3c34;
-      font-size: @font-size-lg;
-    }
+  &__month-day strong {
+    color: #3d3328;
+    font-size: @font-size-lg;
+  }
 
-    &.has-entry {
-      background: color-mix(in srgb, var(--day-color) 22%, white);
-      box-shadow: inset 0 -5px 0 var(--day-color);
-    }
+  &__month-day.has-entry {
+    background: color-mix(in srgb, var(--day-color) 28%, white);
+    box-shadow: inset 0 -6px 0 var(--day-color);
   }
 
   &__stats {
@@ -262,7 +328,14 @@ function onRemove(entry: Journal) {
     flex-wrap: wrap;
     gap: @space-md;
     margin: @space-xl 0 @space-lg;
-    color: #66736b;
+  }
+
+  &__stats span {
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    color: #6f5b46;
+    font-weight: 800;
   }
 
   &__list {
@@ -273,22 +346,55 @@ function onRemove(entry: Journal) {
   &__loading {
     padding: @space-xxl;
     text-align: center;
-    color: #66736b;
+    color: #765f4a;
   }
 }
 
 .composer {
-  --active-mood: #f4b942;
+  --active-mood: #ffbf3f;
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(300px, 0.9fr) 1.1fr;
+  grid-template-columns: 0.72fr 1fr 1.1fr;
   gap: @space-xl;
   padding: @space-xl;
-  border-radius: @radius-lg;
+  border: 2px solid rgba(61, 51, 40, 0.12);
+  border-radius: 34px;
   background:
-    linear-gradient(135deg, rgba(244, 185, 66, 0.16), rgba(104, 167, 173, 0.18)),
-    rgba(251, 250, 245, 0.88);
-  border: 1px solid rgba(37, 49, 43, 0.1);
-  backdrop-filter: blur(10px);
+    radial-gradient(circle at 4% 12%, color-mix(in srgb, var(--active-mood) 34%, transparent) 0 86px, transparent 88px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 244, 210, 0.9));
+  box-shadow: 0 22px 56px rgba(124, 83, 45, 0.14);
+  backdrop-filter: blur(12px);
+
+  &__intro {
+    padding: @space-lg;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.46);
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 999px;
+    background: #ffcf6b;
+    color: #3d3328;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    transform: rotate(-4deg);
+  }
+
+  &__intro h2 {
+    margin: @space-md 0 @space-sm;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 32px;
+    line-height: 1.05;
+  }
+
+  &__intro p {
+    margin: 0;
+    color: #765f4a;
+    line-height: 1.8;
+  }
 
   &__photos {
     display: grid;
@@ -299,28 +405,41 @@ function onRemove(entry: Journal) {
   &__picker,
   &__preview {
     aspect-ratio: 1;
-    border-radius: @radius-md;
+    border-radius: 22px;
     overflow: hidden;
   }
 
   &__picker {
-    border: 1px dashed #8b9a8c;
+    border: 2px dashed rgba(61, 51, 40, 0.22);
     background: rgba(255, 255, 255, 0.62);
-    color: #425248;
+    color: #6f5b46;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-weight: 900;
+  }
 
-    input {
-      display: none;
-    }
+  &__picker input {
+    display: none;
+  }
+
+  &__picker small {
+    margin-top: 4px;
+    color: #ff7a45;
+  }
+
+  &__preview {
+    padding: 7px;
+    background: #fffaf0;
+    box-shadow: 0 10px 24px rgba(70, 48, 31, 0.12);
   }
 
   &__preview img {
     width: 100%;
     height: 100%;
+    border-radius: 16px;
     object-fit: cover;
     display: block;
   }
@@ -333,25 +452,26 @@ function onRemove(entry: Journal) {
   &__date-label {
     display: grid;
     gap: @space-xs;
-    color: #5e6c63;
+    color: #765f4a;
     font-size: @font-size-sm;
+    font-weight: 800;
   }
 
   &__date,
   &__note {
     width: 100%;
-    border: 1px solid #c9d1c7;
-    border-radius: @radius-md;
-    background: rgba(255, 255, 255, 0.82);
-    color: #25312b;
+    border: 2px solid rgba(61, 51, 40, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #3d3328;
   }
 
   &__date {
-    padding: 10px 12px;
+    padding: 11px 13px;
   }
 
   &__note {
-    min-height: 96px;
+    min-height: 108px;
     padding: @space-md;
     resize: vertical;
     line-height: 1.7;
@@ -364,50 +484,57 @@ function onRemove(entry: Journal) {
   }
 
   &__mood {
-    --mood-color: #f4b942;
+    --mood-color: #ffbf3f;
     display: inline-flex;
     align-items: center;
     gap: @space-xs;
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     border-radius: 999px;
-    padding: 7px 11px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.7);
-    color: #25312b;
+    color: #3d3328;
     cursor: pointer;
+    font-weight: 800;
+  }
 
-    span {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--mood-color);
-    }
+  &__mood span {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--mood-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mood-color) 20%, transparent);
+  }
 
-    &.is-active {
-      border-color: var(--mood-color);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mood-color) 26%, transparent);
-    }
+  &__mood.is-active {
+    border-color: var(--mood-color);
+    background: color-mix(in srgb, var(--mood-color) 22%, white);
+    transform: translateY(-1px) rotate(-1deg);
   }
 }
 
-@media (max-width: 920px) {
+@media (max-width: 980px) {
   .journal-page__month-strip {
     grid-template-columns: repeat(7, minmax(42px, 1fr));
   }
+
+  .composer {
+    grid-template-columns: 1fr 1fr;
+
+    &__intro {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
-@media (max-width: 820px) {
+@media (max-width: 760px) {
   .journal-page {
     &__hero {
-      display: block;
-
-      h1 {
-        font-size: 34px;
-      }
+      grid-template-columns: 1fr;
+      padding-top: @space-xl;
     }
 
     &__review-link {
-      display: inline-block;
-      margin-top: @space-lg;
+      justify-self: start;
     }
   }
 
