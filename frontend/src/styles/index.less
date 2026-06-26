@@ -1,0 +1,63 @@
+// Side-effect global styles. Imported once from `src/main.ts`.
+// Variables and mixins are auto-injected per file via Vite (see vite.config.ts).
+@import './reset.less';
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(247, 244, 235, 0.74), rgba(231, 238, 232, 0.72)),
+    #f4f1e8;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -3%;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(135deg, rgba(250, 247, 237, 0.36), rgba(239, 246, 239, 0.32)),
+    var(--journal-background-image);
+  background-size: cover, 108% 108%;
+  background-position: center;
+  background-attachment: fixed;
+  opacity: 0.75;
+  filter: saturate(0.94) contrast(0.96);
+  animation: journal-background-drift 36s ease-in-out infinite alternate;
+}
+
+html {
+  --journal-background-image: url('@/assets/journal/mood-landscape.png');
+}
+
+html[data-journal-background='2'] {
+  --journal-background-image: url('@/assets/journal/mood-landscape-2.png');
+}
+
+html[data-journal-background='3'] {
+  --journal-background-image: url('@/assets/journal/mood-landscape-3.png');
+}
+
+#app {
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+@keyframes journal-background-drift {
+  from {
+    background-position: center, 48% 50%;
+    transform: scale(1);
+  }
+
+  to {
+    background-position: center, 54% 47%;
+    transform: scale(1.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+    transform: none;
+  }
+}
